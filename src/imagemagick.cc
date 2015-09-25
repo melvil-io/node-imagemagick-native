@@ -609,6 +609,7 @@ void BuildIdentifyResult(uv_work_t *req, Handle<Value> *argv) {
         out->Set(NanNew<String>("width"), NanNew<Integer>(static_cast<int>(context->image.columns())));
         out->Set(NanNew<String>("height"), NanNew<Integer>(static_cast<int>(context->image.rows())));
         out->Set(NanNew<String>("depth"), NanNew<Integer>(static_cast<int>(context->image.depth())));
+        out->Set(NanNew<String>("totalColors"), NanNew<Integer>(static_cast<int>(context->image.totalColors())));
         out->Set(NanNew<String>("format"), NanNew<String>(context->image.magick().c_str()));
 
         Handle<Object> out_density = NanNew<Object>();
