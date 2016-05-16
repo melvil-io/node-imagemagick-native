@@ -56,6 +56,8 @@ private:
 struct im_ctx_base {
 	Nan::Callback * callback;
     std::string error;
+    unsigned int cropped_width;
+    unsigned int cropped_height;
 
     char* srcData;
     size_t length;
@@ -114,7 +116,6 @@ inline Local<Value> WrapPointer(char *ptr, size_t length) {
 inline Local<Value> WrapPointer(char *ptr) {
     return WrapPointer(ptr, 0);
 }
-
 
 #define RETURN_BLOB_OR_ERROR(req) \
     do { \
@@ -346,6 +347,7 @@ void DoConvert(uv_work_t* req) {
             // keep aspect ratio, get the maximum image which fits inside specified size
             char geometryString[ 32 ];
             sprintf( geometryString, "%dx%d>", width, height );
+
             if (debug) printf( "resize to: %s\n", geometryString );
 
             try {
@@ -408,6 +410,11 @@ void DoConvert(uv_work_t* req) {
         image.density(Magick::Geometry(context->density, context->density));
     }
 
+    // melvil
+    context->cropped_width = (int)image.columns();
+    context->cropped_height = (int)image.rows();
+    if (debug) printf( "resized to debug: %d, %d\n", context->width, context->height );
+
     Magick::Blob dstBlob;
     try {
         image.write( &dstBlob );
@@ -432,20 +439,27 @@ void GeneratedBlobAfter(uv_work_t* req) {
     im_ctx_base* context = static_cast<im_ctx_base*>(req->data);
     delete req;
 
-    Local<Value> argv[2];
+    Local<Value> argv[3];
 
     if (!context->error.empty()) {
         argv[0] = Exception::Error(Nan::New<String>(context->error.c_str()).ToLocalChecked());
         argv[1] = Nan::Undefined();
+        argv[2] = Nan::Undefined();
     }
     else {
+        Local<Object> melvil_metadata = Nan::New<Object>();
+
+        melvil_metadata->Set(Nan::New<String>("width").ToLocalChecked(),  Nan::New<Integer>(context->cropped_width));
+        melvil_metadata->Set(Nan::New<String>("height").ToLocalChecked(), Nan::New<Integer>(context->cropped_height));
+
         argv[0] = Nan::Undefined();
         argv[1] = WrapPointer((char *)context->dstBlob.data(), context->dstBlob.length());
+        argv[2] = melvil_metadata;
     }
 
     Nan::TryCatch try_catch; // don't quite see the necessity of this
 
-    context->callback->Call(2, argv);
+    context->callback->Call(3, argv);
 
     delete context->callback;
 
