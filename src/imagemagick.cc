@@ -345,7 +345,7 @@ void DoConvert(uv_work_t* req) {
         else if ( strcmp ( resizeStyle, "aspectfit" ) == 0 ) {
             // keep aspect ratio, get the maximum image which fits inside specified size
             char geometryString[ 32 ];
-            sprintf( geometryString, "%dx%d", width, height );
+            sprintf( geometryString, "%dx%d>", width, height );
             if (debug) printf( "resize to: %s\n", geometryString );
 
             try {
